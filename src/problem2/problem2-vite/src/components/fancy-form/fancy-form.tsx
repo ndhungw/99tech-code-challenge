@@ -43,7 +43,21 @@ const FORM_ID = "currency-swap-form" as const;
 
 const tokenExchangeFormSchema = z
 	.object({
-		inputAmount: z.number().min(0, "From amount must be at least 0."),
+		inputAmount: z
+			.union([z.number(), z.string()])
+			.transform((val) => {
+				if (typeof val === "string") {
+					if (val === "") return 0;
+					// handle decimal point at the end while typing
+					if (val.endsWith(".")) {
+						return parseFloat(val.slice(0, -1)) || 0;
+					}
+					const parsed = parseFloat(val);
+					return Number.isNaN(parsed) ? 0 : parsed;
+				}
+				return val;
+			})
+			.pipe(z.number().min(1, "Amount must be at least 1")),
 		inputCurrency: z.string().min(1, "Currency to send is required"),
 		outputCurrency: z.string().min(1, "Currency to receive is required"),
 	})
@@ -74,9 +88,9 @@ export function FancyForm() {
 		queryFn: ({ signal }) => getTokenPrices({ signal }),
 	});
 
-	const form = useForm<z.infer<typeof tokenExchangeFormSchema>>({
+	const form = useForm({
 		resolver: zodResolver(tokenExchangeFormSchema),
-		// mode: "onBlur",
+		mode: "onChange",
 		defaultValues: {
 			inputAmount: 1,
 			inputCurrency: "",
@@ -167,18 +181,40 @@ export function FancyForm() {
 									<FieldLabel htmlFor={field.name}>Amount to send</FieldLabel>
 									<Input
 										{...field}
-										type="number"
-										inputMode="numeric"
-										// inputMode="decimal" // show number keyboard on mobile device
-										// pattern="[0-9]*" // only accept floating number
+										type="text" // allow user to type decimal point
+										inputMode="decimal"
+										pattern="[0-9]*\.?[0-9]*"
 										onChange={(ev) => {
-											const value = ev.target.valueAsNumber;
-											// const value = parseFloat(ev.target.value);
-											// field.onChange(Number.isNaN(value) ? field.value : value); // ensure the value is number
-											// field.onChange(ev.currentTarget.valueAsNumber);
-											field.onChange(value);
-											// TODO: handle Infinity, allow to input floating number
+											const inputValue = ev.target.value;
+
+											// allow empty input
+											if (inputValue === "") {
+												field.onChange("");
+												return;
+											}
+
+											const decimalRegex = /^\d*\.?\d*$/;
+
+											if (!decimalRegex.test(inputValue)) {
+												return; // Reject invalid input
+											}
+
+											const numericValue = parseFloat(inputValue);
+
+											// handle case where user typed just a decimal point
+											if (inputValue.endsWith(".") || inputValue === ".") {
+												// Keep the raw string to allow typing decimal numbers
+												field.onChange(inputValue);
+											} else {
+												// Convert valid numbers to numeric type
+												field.onChange(numericValue);
+											}
 										}}
+										value={
+											typeof field.value === "number"
+												? field.value.toString()
+												: field.value
+										}
 										aria-invalid={fieldState.invalid}
 										id={field.name}
 										placeholder="Enter amount to send"
