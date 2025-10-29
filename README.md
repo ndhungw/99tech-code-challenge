@@ -27,14 +27,23 @@ This repository contains my solutions to the 99tech coding challenge, demonstrat
 **Technologies used**:
 
 - React with TypeScript
-- TanStack Query for data fetching
-- Shadcn for UI components
+- TanStack Start + TanStack Query
+- Vite for fast build tooling
+- BiomeJS for unified linting and formatting *(first time adoption)*
+- Shadcn for rapid UI component development *(first time using)*
 - React Hook Form and Zod for form handling and validating
 - Responsive design with mobile first
+
+**Learning highlights**:
+
+- First experience with TanStack Start's file-based routing
+- Discovered BiomeJS as a unified alternative to ESLint + Prettier
+- Explored Shadcn's `<Field>` component for creating consistent form layouts
 
 **Implementation (using Vite)**: [./src/problem2/problem2-vite/](./src/problem2/problem2-vite/)
 
 **To run locally**:
+
 ```bash
 cd src/problem2/problem2-vite
 pnpm i
